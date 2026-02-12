@@ -20,8 +20,16 @@ import com.restful.orderqty.repository.OrderQtyRepository;
 public class OrderQtyService {
 	private static final Logger _LOGGER = LoggerFactory.getLogger(OrderQtyService.class);
 	
+	//MongoDB Operations
+	public static final String MONGODB_OPERATION_SAVE = "SAVE";
+	public static final String MONGODB_OPERATION_UPDATE = "UPDATE";
+	public static final String MONGODB_OPERATION_DELETE = "DELETE";
+	
 	@Autowired
 	private OrderQtyRepository orderQtyRepository;
+	
+	@Autowired
+	private OrderDocumentService orderDocumentService;
 
     @Transactional
 	public OrderQty saveOrUpdate(OrderQty orderQty) throws ServiceException {
@@ -35,14 +43,22 @@ public class OrderQtyService {
 				orderResult.setManufacturer(orderQty.getManufacturer());
 				orderResult.setProduct(orderQty.getProduct());
 				orderResult.setUser(orderQty.getUser());
+				orderResult.setDocumentType(MONGODB_OPERATION_SAVE);
 			} else {
 				orderResult = optionalOrderResult.get();
+				orderResult.setDocumentType(MONGODB_OPERATION_UPDATE);
 			}
 			orderResult.setQuantity(orderQty.getQuantity());
 				
 			//Save into mongodb intrasactions
-			//orderDocumentService.saveOrderDocument(orderResult);
 			saveOrderQty = orderQtyRepository.save(orderResult);
+			
+			//saveOrderQty = orderResult;
+			if(saveOrderQty != null && saveOrderQty.getOrderId() > 0) {
+				//Send the value to kafka producer
+				
+				orderDocumentService.saveOrderDocument(orderResult);
+			}
 			
     	} catch (Exception exp) {
 			_LOGGER.error("ERROR: Service Exception occured in saveOrUpdate."+exp.toString());	
@@ -55,9 +71,10 @@ public class OrderQtyService {
 	public OrderQty updateOrderQty(OrderQty orderQty) throws ServiceException {
     	OrderQty updateOrderQty = null;
     	try {	
-			//Save into mongodb intrasactions
-			//orderDocumentService.updateOrderDocument(orderQty);
 	    	updateOrderQty = orderQtyRepository.save(orderQty);
+	    	//Save into mongodb intrasactions
+	    	updateOrderQty.setDocumentType(MONGODB_OPERATION_UPDATE);
+			orderDocumentService.saveOrderDocument(updateOrderQty);
 	    	
     	} catch (Exception exp) {
 			_LOGGER.error("ERROR: Service Exception occured in updateOrderQty."+exp.toString());	
@@ -71,9 +88,12 @@ public class OrderQtyService {
     	
 		try {
 			//Get the orderQty details before delete from database.
-			//OrderQty resultOrderQty = findByOrderId(orderId);
+			Optional<OrderQty> resultOrderQty = findByOrderId(orderId);
 			//Delete record from MySql database
-			orderQtyRepository.deleteByOrderId(orderId);
+			orderQtyRepository.deleteByOrderId(resultOrderQty.get().getOrderId());
+			//Save into mongodb intrasactions
+			resultOrderQty.get().setDocumentType(MONGODB_OPERATION_DELETE);
+			orderDocumentService.saveOrderDocument(resultOrderQty.get());
 		} catch (Exception exp) {
 			_LOGGER.error("ERROR: Service Exception occured in deleteByOrderId."+exp.toString());	
 			throw new ServiceException("ERROR: Service Exception occured in deleteByOrderId."+exp.toString());

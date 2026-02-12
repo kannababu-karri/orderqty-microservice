@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,12 +17,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.restful.orderqty.entity.OrderDocument;
 import com.restful.orderqty.entity.OrderQty;
 import com.restful.orderqty.exception.InvalidOrderQtyException;
 import com.restful.orderqty.exception.OrderQtyNotFoundException;
 import com.restful.orderqty.exception.ServiceException;
+import com.restful.orderqty.service.OrderDocumentService;
 import com.restful.orderqty.service.OrderQtyService;
 
+@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/api/orderqty")
 public class OrderQtyController {
@@ -30,6 +34,9 @@ public class OrderQtyController {
 	
     @Autowired
     private OrderQtyService orderQtyService;
+	
+    @Autowired
+    private OrderDocumentService orderDocumentService;
     
     public OrderQtyController() {
     	_LOGGER.info(">>> OrderQtyController LOADED. <<<");
@@ -79,8 +86,7 @@ public class OrderQtyController {
             //throw new OrderQtyNotFoundException("No orders found");
         }
 
-        return ResponseEntity.ok(orderQtys);
-    	
+        return ResponseEntity.ok(orderQtys);	
     }
 
     //GET products by multiple fields
@@ -174,5 +180,52 @@ public class OrderQtyController {
 			_LOGGER.error("ERROR: Service Exception occured in findByOrderId."+exp.toString());	
 			throw new ServiceException("ERROR: Service Exception occured in findByOrderId."+exp.toString());
 		}
+    }
+    
+    @GetMapping("/mongouserid/{userId}")
+	public ResponseEntity<List<OrderDocument>> getByMongoUserid(@PathVariable Long userId) {
+    	_LOGGER.info(">>> Inside getByMongoUserid. <<<");
+    	
+    	if (userId == null || (userId != null && userId.intValue() <= 0)) {
+			throw new InvalidOrderQtyException("User id must not be empty");
+		}
+    	
+    	List<OrderDocument> orderDocuments = orderDocumentService.findByUserId(userId);
+    	
+		return ResponseEntity.ok(orderDocuments);
+    }
+    
+    @GetMapping("/allmongousers")
+	public ResponseEntity<List<OrderDocument>> getByAllmongousers() {
+    	_LOGGER.info(">>> Inside getByAllmongousers. <<<");
+    	
+    	List<OrderDocument> orderDocuments = orderDocumentService.findAll();
+    	
+		return ResponseEntity.ok(orderDocuments);
+    }
+    
+    // GET products by multiple fields
+    @GetMapping("/searchmongo/mfgproductuser")
+    public ResponseEntity<List<OrderDocument>> getBySearchmongoMfgproductuser(
+    		@RequestParam(required = false) Long manufacturerId,
+            @RequestParam(required = false) Long productId,
+            @RequestParam(required = false) Long userId) {
+    	_LOGGER.info(">>> Inside getBySearchMongoMfgProductuser. <<<");
+        try {
+        	List<OrderDocument> orderDocuments = null;
+            if(manufacturerId != null && manufacturerId.longValue() > 0 && productId != null && productId.longValue() > 0) {
+            	orderDocuments = orderDocumentService.findByManufacturerIdAndProductIdAndUserId(manufacturerId, productId, userId);
+            } else if (manufacturerId != null && manufacturerId.longValue() > 0) {
+            	orderDocuments = orderDocumentService.findByManufacturerId(manufacturerId, userId);
+            } else if (productId != null && productId.longValue() > 0) {
+            	orderDocuments = orderDocumentService.findByProductId(productId, userId);
+            } else {
+            	orderDocuments = orderDocumentService.findByUserId(userId);
+            }
+            return ResponseEntity.ok(orderDocuments);
+        } catch (ServiceException ex) {
+            _LOGGER.error("Error fetching OrderQtys by multiple fields product and user: {}", ex.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }
