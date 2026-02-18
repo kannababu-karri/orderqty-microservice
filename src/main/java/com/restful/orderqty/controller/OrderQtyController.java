@@ -25,7 +25,6 @@ import com.restful.orderqty.exception.ServiceException;
 import com.restful.orderqty.service.OrderDocumentService;
 import com.restful.orderqty.service.OrderQtyService;
 
-@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/api/orderqty")
 public class OrderQtyController {
