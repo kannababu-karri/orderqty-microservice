@@ -1,11 +1,12 @@
 package com.restful.orderqty.service;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.restful.orderqty.entity.OrderDocument;
@@ -40,52 +41,33 @@ public class OrderDocumentService {
 		return result;
 	}
 	
-	public List<OrderDocument> findAll() throws ServiceException {
-		try {
-			return orderDocumentRepository.findAll();
-		} catch (Exception exp) {
-			_LOGGER.error("ERROR: Service Exception occured in findAll."+exp.toString());	
-			throw new ServiceException("ERROR: Service Exception occured in findAll."+exp.toString());
-		}
-	}
+	public Page<OrderDocument> searchMongo(Long mfgId, Long productId, Long userId, Pageable pageable) throws ServiceException {
 
-	public List<OrderDocument> findByUserId(Long userId) throws ServiceException {
 		try {
-			return orderDocumentRepository.findByUserId(userId);
+			if (mfgId != null && mfgId.longValue() > 0 && productId != null && productId.longValue() > 0 && userId != null && userId.longValue() > 0) {
+				return orderDocumentRepository.findByManufacturerIdAndProductIdAndUserId(mfgId, productId, userId, pageable);
+			}
+
+			if (mfgId != null  && mfgId.longValue() > 0 && userId != null && userId.longValue() > 0 ) {
+				return orderDocumentRepository.findByManufacturerId(mfgId, userId, pageable);
+			}
+
+			if (productId != null && productId.longValue() > 0 && userId != null && userId.longValue() > 0) {
+				return orderDocumentRepository.findByProductId(productId, userId, pageable);
+			}
+
+			if (userId != null && userId.longValue() > 0) {
+				return orderDocumentRepository.findByUserId(userId, pageable);
+			}
+
+			return orderDocumentRepository.findAll(pageable);
+
 		} catch (Exception exp) {
-			_LOGGER.error("ERROR: Service Exception occured in findByUserId."+exp.toString());	
-			throw new ServiceException("ERROR: Service Exception occured in findByUserId."+exp.toString());
+			_LOGGER.error("ERROR: Service Exception occured in search." + exp.toString());
+			throw new ServiceException("ERROR: Service Exception occured in search." + exp.toString());
 		}
 	}
     
-	public List<OrderDocument> findByManufacturerId(Long manufacturerId, Long userId) throws ServiceException {
-		try {
-			return orderDocumentRepository.findByManufacturerId(manufacturerId, userId);
-		} catch (Exception exp) {
-			_LOGGER.error("ERROR: Service Exception occured in findByManufacturerId."+exp.toString());	
-			throw new ServiceException("ERROR: Service Exception occured in findByManufacturerId."+exp.toString());
-		}
-	}
-    
-	public List<OrderDocument> findByProductId(Long productId, Long userId) throws ServiceException {
-		try {
-			return orderDocumentRepository.findByProductId(productId, userId);
-		} catch (Exception exp) {
-			_LOGGER.error("ERROR: Service Exception occured in findByProductId."+exp.toString());	
-			throw new ServiceException("ERROR: Service Exception occured in findByProductId."+exp.toString());
-		}
-	}
-    
-    // Find by user, mfg and product id
-	public List<OrderDocument> findByManufacturerIdAndProductIdAndUserId(Long manufacturerId, Long productId, Long userId) throws ServiceException {
-		try {
-			return orderDocumentRepository.findByManufacturerIdAndProductIdAndUserId(manufacturerId, productId, userId);
-		} catch (Exception exp) {
-			_LOGGER.error("ERROR: Service Exception occured in findByManufacturerIdAndProductIdAndUserId."+exp.toString());	
-			throw new ServiceException("ERROR: Service Exception occured in findByManufacturerIdAndProductIdAndUserId."+exp.toString());
-		}
-	}
-	
 	/**
 	 * Write the data into mondo db database as order document
 	 * @param order

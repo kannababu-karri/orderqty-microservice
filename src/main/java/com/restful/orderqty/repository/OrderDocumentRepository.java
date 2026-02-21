@@ -1,7 +1,7 @@
 package com.restful.orderqty.repository;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
@@ -12,14 +12,14 @@ import com.restful.orderqty.entity.OrderDocument;
  */
 @Repository
 public interface OrderDocumentRepository extends MongoRepository<OrderDocument, String> {
-	List<OrderDocument> findAll();
+	Page<OrderDocument> findAll(Pageable pageable);
 
-    List<OrderDocument> findByUserId(Long userId);
+	Page<OrderDocument> findByUserId(Long userId, Pageable pageable);
     
-    List<OrderDocument> findByManufacturerId(Long manufacturerId, Long userId);
+	Page<OrderDocument> findByManufacturerId(Long manufacturerId, Long userId, Pageable pageable);
     
-    List<OrderDocument> findByProductId(Long productId, Long userId);
+	Page<OrderDocument> findByProductId(Long productId, Long userId, Pageable pageable);
     
     // Find by user, mfg and product id
-    List<OrderDocument> findByManufacturerIdAndProductIdAndUserId(Long manufacturerId, Long productId, Long userId);
+	Page<OrderDocument> findByManufacturerIdAndProductIdAndUserId(Long manufacturerId, Long productId, Long userId, Pageable pageable);
 }
