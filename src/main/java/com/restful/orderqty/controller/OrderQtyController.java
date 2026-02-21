@@ -107,7 +107,7 @@ public class OrderQtyController {
     
     @GetMapping({"", "/"})
     public ResponseEntity<PageResponseDto<OrderQty>> getAll(
-    		@PageableDefault(size = 5, sort = "mfgName")
+    		@PageableDefault(size = 5)
     	    Pageable pageable
     		) {
     	_LOGGER.info(">>> Inside getAll. <<<");
